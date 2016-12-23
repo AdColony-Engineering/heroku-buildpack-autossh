@@ -137,8 +137,8 @@ start_autossh() {
     #   "ubuntu@$SSH_TUNNEL_HOST": the host to tunnel through
     ####
     echo "      Running autossh command:"
-    echo "      $CACHE_DIR/autossh" -M 0 -f -N -o 'ServerAliveInterval 10' -o 'ServerAliveCountMax 3' -o "UserKnownHostsFile=${PWD}/known_hosts" -i "${PWD}/ssh_tunnel_rsa" -L "${listen_port}:${tunnel_to_host}:${tunnel_to_port}" "ubuntu@${ssh_tunnel_host}"
-    "$CACHE_DIR/autossh" -M 0 -f -N -o 'ServerAliveInterval 10' -o 'ServerAliveCountMax 3' -o "UserKnownHostsFile=${PWD}/known_hosts" -i "${PWD}/ssh_tunnel_rsa" -L "${listen_port}:${tunnel_to_host}:${tunnel_to_port}" "ubuntu@${ssh_tunnel_host}"
+    echo "      $CACHE_DIR/autossh/autossh" -M 0 -f -N -o 'ServerAliveInterval 10' -o 'ServerAliveCountMax 3' -o "UserKnownHostsFile=${PWD}/known_hosts" -i "${PWD}/ssh_tunnel_rsa" -L "${listen_port}:${tunnel_to_host}:${tunnel_to_port}" "ubuntu@${ssh_tunnel_host}"
+    "$CACHE_DIR/autossh/autossh" -M 0 -f -N -o 'ServerAliveInterval 10' -o 'ServerAliveCountMax 3' -o "UserKnownHostsFile=${PWD}/known_hosts" -i "${PWD}/ssh_tunnel_rsa" -L "${listen_port}:${tunnel_to_host}:${tunnel_to_port}" "ubuntu@${ssh_tunnel_host}"
 }
 
 open_artifactory_ssh_tunnel() {
