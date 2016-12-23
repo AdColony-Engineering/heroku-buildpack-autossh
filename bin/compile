@@ -75,11 +75,11 @@ fi
 #
 # questions: ask @josh.conner or @azi
 ############
-# set -o errexit    # always exit on error
-# set -o pipefail   # don't ignore exit codes when piping output
-# set -o nounset    # fail on unset variables
-# export AUTOSSH_DEBUG=1
-# export AUTOSSH_LOGFILE="${PWD}/autossh.log"
+set -o errexit    # always exit on error
+set -o pipefail   # don't ignore exit codes when piping output
+set -o nounset    # fail on unset variables
+export AUTOSSH_DEBUG=1
+export AUTOSSH_LOGFILE="${PWD}/autossh.log"
 
 install_ssh_keys() {
     # mkdir -p "${HOME}/.ssh"
@@ -137,8 +137,8 @@ start_autossh() {
     #   "ubuntu@$SSH_TUNNEL_HOST": the host to tunnel through
     ####
     echo "      Running autossh command:"
-    echo "      $CACHE_DIR/autossh/autossh" -M 0 -f -N -o 'ServerAliveInterval 10' -o 'ServerAliveCountMax 3' -o "UserKnownHostsFile=${PWD}/known_hosts" -i "${PWD}/ssh_tunnel_rsa" -L "${listen_port}:${tunnel_to_host}:${tunnel_to_port}" "ubuntu@${ssh_tunnel_host}"
-    "$CACHE_DIR/autossh/autossh" -M 0 -f -N -o 'ServerAliveInterval 10' -o 'ServerAliveCountMax 3' -o "UserKnownHostsFile=${PWD}/known_hosts" -i "${PWD}/ssh_tunnel_rsa" -L "${listen_port}:${tunnel_to_host}:${tunnel_to_port}" "ubuntu@${ssh_tunnel_host}"
+    echo "      $PWD/.heroku/autossh/autossh" -M 0 -f -N -o 'ServerAliveInterval 10' -o 'ServerAliveCountMax 3' -o "UserKnownHostsFile=${PWD}/known_hosts" -i "${PWD}/ssh_tunnel_rsa" -L "${listen_port}:${tunnel_to_host}:${tunnel_to_port}" "ubuntu@${ssh_tunnel_host}"
+    "$PWD/.heroku/autossh/autossh" -M 0 -f -N -o 'ServerAliveInterval 10' -o 'ServerAliveCountMax 3' -o "UserKnownHostsFile=${PWD}/known_hosts" -i "${PWD}/ssh_tunnel_rsa" -L "${listen_port}:${tunnel_to_host}:${tunnel_to_port}" "ubuntu@${ssh_tunnel_host}"
 }
 
 open_artifactory_ssh_tunnel() {
