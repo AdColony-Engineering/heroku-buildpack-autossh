@@ -86,11 +86,11 @@ install_ssh_keys() {
     # chmod 700 "${HOME}/.ssh"
 
     # Copy public key env variable into a file
-    echo "${SSH_TUNNEL_PUBLIC_KEY}" > "${PWD}/ssh_tunnel_rsa.pub"
+    cat "${ENV_DIR}/SSH_TUNNEL_PUBLIC_KEY" > "${PWD}/ssh_tunnel_rsa.pub"
     chmod 644 "${PWD}/ssh_tunnel_rsa.pub"
 
     # Copy private key env variable into a file
-    echo "${SSH_TUNNEL_PRIVATE_KEY}" > "${PWD}/ssh_tunnel_rsa"
+    cat "${ENV_DIR}/SSH_TUNNEL_PRIVATE_KEY" > "${PWD}/ssh_tunnel_rsa"
     chmod 600 "${PWD}/ssh_tunnel_rsa"
 }
 
