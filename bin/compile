@@ -1,8 +1,150 @@
 #!/usr/bin/env bash
 # bin/compile <build-dir> <cache-dir> <env-dir>
 
-compile() {
-  local -r script_dir="$(dirname "${BASH_SOURCE[0]}")"
-  "${script_dir}/install-autossh" "$@" && "${script_dir}/start-autossh" "$@"
+### Configure environment
+
+set -o errexit    # always exit on error
+set -o pipefail   # don't ignore exit codes when piping output
+set -o nounset    # fail on unset variables
+
+### Configure directories
+
+BUILD_DIR=${1:-}
+CACHE_DIR=${2:-}
+ENV_DIR=${3:-}
+BP_DIR=$(cd $(dirname ${0:-}); cd ..; pwd)
+
+mkdir -p "$BUILD_DIR/.heroku/autossh"
+mkdir -p "$CACHE_DIR/autossh"
+
+cd $BUILD_DIR
+
+### Copy profiles
+
+mkdir -p $BUILD_DIR/.profile.d
+cp $BP_DIR/profile/* $BUILD_DIR/.profile.d/
+
+### Installation
+
+download_autossh() {
+  echo "       Downloading autossh version 1.4e..."
+  download_url="http://www.harding.motd.ca/autossh/autossh-1.4e.tgz"
+  curl $download_url -s -o - | tar -xz -C $CACHE_DIR/autossh
 }
-compile "$@"
+
+build_autossh() {
+  echo "       Building autossh..."
+  cd $CACHE_DIR/autossh/autossh-1.4e
+  ./configure --quiet
+  make --quiet
+}
+
+cleanup() {
+  echo "       Cleaning up..."
+  find $CACHE_DIR/autossh/autossh-1.4e -type f  | grep -v "autossh$" | xargs rm
+}
+
+install_autossh() {
+  cp $CACHE_DIR/autossh/autossh-1.4e/autossh $BUILD_DIR/.heroku/autossh
+  chmod +x $BUILD_DIR/.heroku/autossh/autossh
+  echo "       Installation successful!"
+}
+
+echo "-----> Installing autossh"
+if [ ! -f $CACHE_DIR/autossh/autossh-1.4e/autossh ]; then
+  download_autossh
+  build_autossh
+  cleanup
+fi
+
+############
+# open-artifactory-ssh-tunnel
+#
+# configures and opens and autossh-backed ssh tunnel to use when installing
+# dependencies from artifactory, as it is not available to the public internet.
+#
+# it depends on the follow environment variables being set:
+#   - SSH_TUNNEL_PUBLIC_KEY: the public SSH key for the tunnel. get from the tools
+#       team
+#   - SSH_TUNNEL_PRIVATE_KEY: the public SSH key for the tunnel. get from the
+#       tools team
+#
+# additionally, you can optionally set the following:
+#   - SSH_TUNNEL_LISTEN_PORT: the local port to forward traffic to artifactory over
+#       (default:  29177)
+#
+# questions: ask @josh.conner or @azi
+############
+set -o errexit    # always exit on error
+set -o pipefail   # don't ignore exit codes when piping output
+set -o nounset    # fail on unset variables
+
+install_ssh_keys() {
+    # Copy public key env variable into a file
+    echo "${SSH_TUNNEL_PUBLIC_KEY}" > "${PWD}/ssh_tunnel_rsa.pub"
+    chmod 644 "${PWD}/ssh_tunnel_rsa.pub"
+
+    # Copy private key env variable into a file
+    echo "${SSH_TUNNEL_PRIVATE_KEY}" > "${PWD}/ssh_tunnel_rsa"
+    chmod 600 "${PWD}/ssh_tunnel_rsa"
+}
+
+add_host_to_known_hosts() {
+    # This is to avoid the authenticity of host question that otherwise will halt
+    # autossh from setting up the tunnel.
+    #
+    # Ex:
+    # The authenticity of host '[hostname] ([IP address])' can't be established.
+    # RSA key fingerprint is [fingerprint].
+    # Are you sure you want to continue connecting (yes/no)?
+    local ssh_tunnel_host="$1"
+    ssh-keyscan "$ssh_tunnel_host" >> "${PWD}/known_hosts"
+}
+
+run_autossh() {
+    local ssh_tunnel_host="$1"
+    local tunnel_to_host="$2"
+    local tunnel_to_port="$3"
+    # i just picked a random unassigned port as a default, see:
+    # http://stackoverflow.com/a/28369841/604614
+    # if there's a collision, you can override by setting SSH_TUNNEL_LISTEN_PORT
+    local listen_port="${SSH_TUNNEL_LISTEN_PORT:-29177}"
+
+    ####
+    # Here are the args we pass to autossh and why:
+    # "-M 0": We disable monitoring by default (we rely on ServerAliveInterval and
+    #         ServerAliveCountMax in ssh to detect whether the connection is still
+    #         alive or not and terminate the connection when it is dead, at which
+    #         point autossh will restart it). See http://serverfault.com/a/538919
+    # "-f": Run as daemon
+    #
+    # The rest of arguments are passed to `ssh`:
+    #   "-N": Do not execute a remote command.  This is useful for just
+    #       forwarding ports.
+    #   "-o 'ServerAliveInterval 10': Number of seconds between sending a packet
+    #       to the server (to keep the connection alive).
+    #   "-o 'ClientAliveCountMax 3': Number of above ServerAlive packets before
+    #       closing the connection. Autossh will create a new connection when this
+    #       happens.
+    #   "-i ~/.ssh/ssh_tunnel_rsa": use the ssh tunnel RSA keys
+    #   "-L listen_port:artifactory.adtilt.com:80": traffic on `listen_port` should
+    #       be "tunneled" to `artifactory.adtilt.com:80`
+    #   "ubuntu@$SSH_TUNNEL_HOST": the host to tunnel through
+    ####
+    echo "      Running autossh command:"
+    echo "        $PWD/.heroku/autossh/autossh" -M 0 -f -N -o 'ServerAliveInterval 10' -o 'ServerAliveCountMax 3' -o "UserKnownHostsFile=${PWD}/known_hosts" -i "${PWD}/ssh_tunnel_rsa" -L "${listen_port}:${tunnel_to_host}:${tunnel_to_port}" "ubuntu@${ssh_tunnel_host}"
+    "$PWD/.heroku/autossh/autossh" -M 0 -f -N -o 'ServerAliveInterval 10' -o 'ServerAliveCountMax 3' -o "UserKnownHostsFile=${PWD}/known_hosts" -i "${PWD}/ssh_tunnel_rsa" -L "${listen_port}:${tunnel_to_host}:${tunnel_to_port}" "ubuntu@${ssh_tunnel_host}"
+}
+
+start_autossh() {
+    local -r ssh_tunnel_ip="$(cat "${ENV_DIR}/SSH_TUNNEL_IP")"
+    local -r ssh_tunnel_target_host="$(cat "${ENV_DIR}/SSH_TUNNEL_TARGET_HOST")"
+    local -r ssh_tunnel_target_port="$(cat "${ENV_DIR}/SSH_TUNNEL_TARGET_PORT")"
+
+    install_ssh_keys
+    add_host_to_known_hosts "$ssh_tunnel_ip"
+    run_autossh "$ssh_tunnel_ip" "$ssh_tunnel_target_host" "$ssh_tunnel_target_port"
+}
+
+install_autossh
+start_autossh
