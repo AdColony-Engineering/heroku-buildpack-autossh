@@ -3,7 +3,6 @@
 
 compile() {
   local -r script_dir="$(dirname "${BASH_SOURCE[0]}")"
-  "${script_dir}/install-autossh" "$@"
-  "${script_dir}/start-autossh" "$@"
+  "${script_dir}/install-autossh" "$@" && "${script_dir}/start-autossh" "$@"
 }
 compile "$@"
