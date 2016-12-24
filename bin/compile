@@ -50,35 +50,7 @@ install_autossh() {
   echo "       Installation successful!"
 }
 
-echo "-----> Installing autossh"
-if [ ! -f $CACHE_DIR/autossh/autossh-1.4e/autossh ]; then
-  download_autossh
-  build_autossh
-  cleanup
-fi
-
-############
-# open-artifactory-ssh-tunnel
-#
-# configures and opens and autossh-backed ssh tunnel to use when installing
-# dependencies from artifactory, as it is not available to the public internet.
-#
-# it depends on the follow environment variables being set:
-#   - SSH_TUNNEL_PUBLIC_KEY: the public SSH key for the tunnel. get from the tools
-#       team
-#   - SSH_TUNNEL_PRIVATE_KEY: the public SSH key for the tunnel. get from the
-#       tools team
-#
-# additionally, you can optionally set the following:
-#   - SSH_TUNNEL_LISTEN_PORT: the local port to forward traffic to artifactory over
-#       (default:  29177)
-#
-# questions: ask @josh.conner or @azi
-############
-set -o errexit    # always exit on error
-set -o pipefail   # don't ignore exit codes when piping output
-set -o nounset    # fail on unset variables
-
+# Running SSH tunnel
 install_ssh_keys() {
     # Copy public key env variable into a file
     cat "${ENV_DIR}/SSH_TUNNEL_PUBLIC_KEY" > "${PWD}/ssh_tunnel_rsa.pub"
@@ -149,6 +121,14 @@ start_autossh() {
     add_host_to_known_hosts "$ssh_tunnel_ip"
     run_autossh "$ssh_tunnel_ip" "$ssh_tunnel_target_host" "$ssh_tunnel_target_port"
 }
+
+echo "-----> Installing autossh"
+if [ ! -f "$CACHE_DIR/autossh/autossh-1.4e/autossh" ]; then
+  download_autossh
+  build_autossh
+  cleanup
+fi
+
 
 install_autossh
 start_autossh
