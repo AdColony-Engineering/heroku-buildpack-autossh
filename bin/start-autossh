@@ -25,7 +25,7 @@ set -o pipefail   # don't ignore exit codes when piping output
 set -o nounset    # fail on unset variables
 
 # BUILD_DIR=${1:-}
-# CACHE_DIR=${2:-}
+CACHE_DIR=${2:-}
 ENV_DIR=${3:-}
 
 install_ssh_keys() {
@@ -84,8 +84,8 @@ run_autossh() {
     #   "ubuntu@$SSH_TUNNEL_HOST": the host to tunnel through
     ####
     echo "      Running autossh command:"
-    echo "      $PWD/.heroku/autossh/autossh" -M 0 -f -N -o 'ServerAliveInterval 10' -o 'ServerAliveCountMax 3' -o "UserKnownHostsFile=${PWD}/known_hosts" -i "${PWD}/ssh_tunnel_rsa" -L "${listen_port}:${tunnel_to_host}:${tunnel_to_port}" "ubuntu@${ssh_tunnel_host}"
-    "$PWD/.heroku/autossh/autossh" -M 0 -f -N -o 'ServerAliveInterval 10' -o 'ServerAliveCountMax 3' -o "UserKnownHostsFile=${PWD}/known_hosts" -i "${PWD}/ssh_tunnel_rsa" -L "${listen_port}:${tunnel_to_host}:${tunnel_to_port}" "ubuntu@${ssh_tunnel_host}"
+    echo "      ${CACHE_DIR}/autossh/autossh" -M 0 -f -N -o 'ServerAliveInterval 10' -o 'ServerAliveCountMax 3' -o "UserKnownHostsFile=${PWD}/known_hosts" -i "${PWD}/ssh_tunnel_rsa" -L "${listen_port}:${tunnel_to_host}:${tunnel_to_port}" "ubuntu@${ssh_tunnel_host}"
+    "${CACHE_DIR}/autossh/autossh" -M 0 -f -N -o 'ServerAliveInterval 10' -o 'ServerAliveCountMax 3' -o "UserKnownHostsFile=${PWD}/known_hosts" -i "${PWD}/ssh_tunnel_rsa" -L "${listen_port}:${tunnel_to_host}:${tunnel_to_port}" "ubuntu@${ssh_tunnel_host}"
 }
 
 start_autossh() {
