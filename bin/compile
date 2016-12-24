@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 # bin/compile <build-dir> <cache-dir> <env-dir>
 
-./install-autossh "$@"
-./start-autossh "$@"
+compile() {
+  local -r script_dir="$(dirname "${BASH_SOURCE[0]}")"
+  "${script_dir}/install-autossh" "$@"
+  "${script_dir}/start-autossh" "$@"
+}
+compile "$@"
