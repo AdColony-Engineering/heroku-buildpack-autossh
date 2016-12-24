@@ -5,9 +5,10 @@ This is a Heroku buildpack that adds `autossh` to your heroku build and starts i
 it as necessary should it die or stop passing traffic. More information about autossh can be found here: <http://www.harding.motd.ca/autossh/>)
 
 ## Usage
+If you're not already using multiple buildpacks, you'll need to set your app up to do so:
 
 ```
-$ heroku create --buildpack https://github.com/heroku/heroku-buildpack-multi.git
+$ heroku buildpacks:set https://github.com/heroku/heroku-buildpack-multi.git
 ```
 
 In your project add a `.buildpacks` file.
@@ -15,7 +16,7 @@ In your project add a `.buildpacks` file.
 ```
 # .buildpacks
 https://github.com/Adcolony-Engineering/heroku-buildpack-autossh.git
-https://github.com/heroku/heroku-buildpack-ruby.git#v138
+https://github.com/heroku/heroku-buildpack-ruby.git#v138 # or whatever buildpack you were previously using
 ```
 
 Then set the following environment variables in your Heroku app:
@@ -40,7 +41,7 @@ http://$SSH_TUNNEL_TARGET_HOST:$SSH_TUNNEL_TARGET_PORT
 you can connect to 
 
 ```
-http:://localhost:$SSH_TUNNEL_LISTEN_PORT
+http://localhost:$SSH_TUNNEL_LISTEN_PORT
 ```
 
 ## Questions? 
